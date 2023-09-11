@@ -6,13 +6,16 @@ public class Flocking : MonoBehaviour
 {
     public List<GameObject> neighbors;
 
-    private float cohesionRange, seperationRange;
+    [SerializeField] private float cohesionRange, seperationRange;
 
-    private Vector3 centerOfMass;
+    private Vector3 centerOfMass, seperationVector;
 
     private Rigidbody rb;
 
     private SphereCollider sc;
+
+    private Vector3 averageVelocity;
+
 
     private void Start()
     {
@@ -26,21 +29,50 @@ public class Flocking : MonoBehaviour
         if(neighbors.Capacity != 0)
         {
             centerOfMass = Vector3.zero;
-
+            int cohesionCount = 0;
+            int seperationCount = 0;
+            seperationVector = Vector3.zero;
+            centerOfMass = Vector3.zero;
 
             for (int i = 0; i < neighbors.Count; i++)
             {
-                
-                centerOfMass = centerOfMass + neighbors[i].transform.position;
+                if (Vector3.Distance(neighbors[i].transform.position, transform.position) > seperationRange)
+                {
+                    centerOfMass = centerOfMass + neighbors[i].transform.position;
+                    cohesionCount++;
+                }
+                else
+                {
+                    seperationVector += neighbors[i].transform.position - transform.position;
+                    seperationCount++;
+                    Debug.Log(seperationVector);
+                }
 
             }
+            if(cohesionCount > 0)
+            {
+                centerOfMass = centerOfMass / cohesionCount;
+                rb.AddForce(((centerOfMass - transform.position) / sc.radius));
+            }
+            if(seperationCount > 0)
+            {
+                rb.AddForce((seperationVector / seperationCount));
+            }
 
-            centerOfMass = centerOfMass / neighbors.Count;
-            
-            Debug.Log(centerOfMass);
+
+            for(int i = 0; i < neighbors.Count; i++)
+            {
+                averageVelocity += neighbors[i].GetComponent<Rigidbody>().velocity;
+            }
+            averageVelocity += rb.velocity;
+            averageVelocity /= neighbors.Count + 1;
+
+            rb.velocity += (averageVelocity - rb.velocity)/2;
+
+
         }
 
-        rb.AddForce(((centerOfMass - transform.position) / sc.radius) * 10);
+      
 
 
 
